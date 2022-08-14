@@ -62,9 +62,8 @@ jobs:
           permasigner -d -p ${{ github.workspace }}/Santander.ipa -o ${{ github.workspace }}/Santander.deb -e ${{ github.workspace }}/entitlements.plist
           
           sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb ${{ github.workspace }}/debdir
-          cd ${{ github.workspace }}/debdir
-          mv Applications Payload
-          zip -r ${{ github.workspace }}/Santander.zip Payload
+          cd ${{ github.workspace }}/debdir/Applications
+          zip -r ${{ github.workspace }}/Santander.zip Santander.app
       - name: Upload IPA
         uses: actions/upload-artifact@v3.1.0
         with:
