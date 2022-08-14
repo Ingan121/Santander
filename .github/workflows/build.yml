@@ -61,6 +61,10 @@ jobs:
           pip3 install permasigner
           permasigner -d -p ${{ github.workspace }}/Santander.ipa -o ${{ github.workspace }}/Santander.deb -e ${{ github.workspace }}/entitlements.plist
           
+          sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb ${{ github.workspace }}/debdir
+          cd ${{ github.workspace }}/debdir
+          mv Applications Payload
+          zip -r ${{ github.workspace }}/Santander.zip Payload
       - name: Upload IPA
         uses: actions/upload-artifact@v3.1.0
         with:
@@ -72,6 +76,12 @@ jobs:
         with:
           name: Santander.deb
           path: ${{ github.workspace }}/Santander.deb
+          
+      - name: Upload zip
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: Santander.zip
+          path: ${{ github.workspace }}/Santander.zip
           
       - name: Copy Procursus to Cache Location
         run: |
