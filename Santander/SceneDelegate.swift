@@ -18,6 +18,36 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
+        var attr: posix_spawnattr_t?
+        posix_spawnattr_init(&attr)
+        posix_spawnattr_set_persona_np(&attr, 99, 1)
+        posix_spawnattr_set_persona_uid_np(&attr, 0)
+        posix_spawnattr_set_persona_gid_np(&attr, 0)
+
+        var fileActions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&fileActions)
+        posix_spawn_file_actions_addopen($fileActions, "/var/mobile/ps.log", 1)
+
+        var pid: pid_t = 0
+        var argv: [UnsafeMutablePointer<CChar>?] = ["/bin/ps", "-A", nil]
+        let result = posix_spawn(&pid, "/bin/ps", &fileActions, &attr, &argv, environ)
+        let err = errno
+        guard result == 0 else {
+            print("Failed")
+            let sheet = UIAlertController(title: "Failed", message: "Error: \(result) Errno: \(err)", preferredStyle: .alert)
+            sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
+            present(sheet, animated: true)
+            print("Error: \(result) Errno: \(err)")
+            return nil
+        }
+        waitpid(pid, nil, 0)
+        let file = "/var/mobile/ps.log"
+        let path=URL(fileURLWithPath: file)
+        let text=try? String(contentsOf: path)
+        let sheet = UIAlertController(title: "Success", message: "Result: \(text)", preferredStyle: .alert)
+        sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
+        present(sheet, animated: true)
+
         let subPathsVC: SubPathsTableViewController
         let window = UIWindow(windowScene: windowScene)
         if UIDevice.current.userInterfaceIdiom == .pad {

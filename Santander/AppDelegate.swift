@@ -15,7 +15,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         // Try obtaining root using com.apple.private.persona-mgmt entitlement
-        if getuid() != 0 {
+        /*if getuid() != 0 {
             var attr: posix_spawnattr_t?
             posix_spawnattr_init(&attr)
             posix_spawnattr_set_persona_np(&attr, 99, 1)
@@ -30,7 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             waitpid(pid, nil, 0)
             exit(0)
             
-        }
+        }*/
         return true
     }
 
