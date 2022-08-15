@@ -33,13 +33,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         var argv: [UnsafeMutablePointer<CChar>?] = [strdup("/bin/ps"), strdup("-A"), nil]
         let result = posix_spawn(&pid, "/bin/ps", &fileActions, &attr, &argv, environ)
         let err = errno
-        guard result == 0 else {
+        if result != 0 {
             print("Failed")
             let sheet = UIAlertController(title: "Failed", message: "Error: \(result) Errno: \(err)", preferredStyle: .alert)
             sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
             self.window?.rootViewController?.present(sheet, animated: true)
             print("Error: \(result) Errno: \(err)")
-            //return nil
         }
         waitpid(pid, nil, 0)
         let file = "/var/mobile/ps.log"
