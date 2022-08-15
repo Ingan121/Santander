@@ -20,13 +20,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         
-        rootexec("/bin/ps axwww -o user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command", "/var/mobile/ps.log")
+        rootexec(cmd: "/bin/ps axwww -o user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command", output: "/var/mobile/ps.log")
 
         let file = "/var/mobile/exec"
         let path=URL(fileURLWithPath: file)
         do {
             let text = try String(contentsOf: path, encoding: .utf8)
-            rootexec(text, "/var/mobile/exec.log")
+            rootexec(cmd: text, output: "/var/mobile/exec.log")
         }
         catch { print("Error!") }
         
@@ -115,7 +115,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         posix_spawn_file_actions_addopen(&fileActions, 1, output, O_WRONLY | O_CREAT | O_TRUNC, 0)
 
         var pid: pid_t = 0
-        var cmdSplit = cmd.components(separatedBy: " ")
+        let cmdSplit = cmd.components(separatedBy: " ")
         var argv: [UnsafeMutablePointer<CChar>?] = cmdSplit.map { strdup($0) } //[strdup("/bin/ps"), strdup("axwww"), strdup("-o"), strdup("user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command"), nil]
         argv.append(nil)
         let result = posix_spawn(&pid, cmdSplit[0], &fileActions, &attr, &argv, environ)
