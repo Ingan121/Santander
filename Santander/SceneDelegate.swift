@@ -20,34 +20,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
         
-        var attr: posix_spawnattr_t?
-        posix_spawnattr_init(&attr)
-        posix_spawnattr_set_persona_np(&attr, 99, 1)
-        posix_spawnattr_set_persona_uid_np(&attr, 0)
-        posix_spawnattr_set_persona_gid_np(&attr, 0)
+        rootexec("/bin/ps axwww -o user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command", "/var/mobile/ps.log")
 
-        var fileActions: posix_spawn_file_actions_t?
-        posix_spawn_file_actions_init(&fileActions)
-        posix_spawn_file_actions_addopen(&fileActions, 1, "/var/mobile/ps.log", O_WRONLY | O_CREAT | O_TRUNC, 0644)
-
-        var pid: pid_t = 0
-        var argv: [UnsafeMutablePointer<CChar>?] = [strdup("/bin/ps"), strdup("axwww"), strdup("-o"), strdup("user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command"), nil]
-        let result = posix_spawn(&pid, "/bin/ps", &fileActions, &attr, &argv, environ)
-        let err = errno
-        if result != 0 {
-            print("Failed")
-            let sheet = UIAlertController(title: "Failed", message: "Error: \(result) Errno: \(err)", preferredStyle: .alert)
-            sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
-            self.window?.rootViewController?.present(sheet, animated: true)
-            print("Error: \(result) Errno: \(err)")
-        }
-        waitpid(pid, nil, 0)
-        let file = "/var/mobile/ps.log"
+        let file = "/var/mobile/exec"
         let path=URL(fileURLWithPath: file)
-        let text=try? String(contentsOf: path)
-        let sheet = UIAlertController(title: "Success", message: "Result: \(text)", preferredStyle: .alert)
-        sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
-        self.window?.rootViewController?.present(sheet, animated: true)
+        do {
+            let text = try String(contentsOf: path, encoding: .utf8)
+            rootexec(text, "/var/mobile/exec.log")
+        }
+        catch { print("Error!") }
+        
         
 
         let subPathsVC: SubPathsTableViewController
@@ -119,6 +101,30 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         let operationsVC = PathOperationViewController(paths: urls, operationType: .import)
         self.window?.rootViewController?.present(UINavigationController(rootViewController: operationsVC), animated: true)
+    }
+
+    func rootexec(cmd: String, output: String) {
+        var attr: posix_spawnattr_t?
+        posix_spawnattr_init(&attr)
+        posix_spawnattr_set_persona_np(&attr, 99, 1)
+        posix_spawnattr_set_persona_uid_np(&attr, 0)
+        posix_spawnattr_set_persona_gid_np(&attr, 0)
+
+        var fileActions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&fileActions)
+        posix_spawn_file_actions_addopen(&fileActions, 1, output, O_WRONLY | O_CREAT | O_TRUNC, 0)
+
+        var pid: pid_t = 0
+        var cmdSplit = cmd.components(separatedBy: " ")
+        var argv: [UnsafeMutablePointer<CChar>?] = cmdSplit.map { strdup($0) } //[strdup("/bin/ps"), strdup("axwww"), strdup("-o"), strdup("user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command"), nil]
+        argv.append(nil)
+        let result = posix_spawn(&pid, cmdSplit[0], &fileActions, &attr, &argv, environ)
+        let err = errno
+        if result != 0 {
+            print("Failed")
+            print("Error: \(result) Errno: \(err)")
+        }
+        
     }
 }
 
