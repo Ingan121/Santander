@@ -27,7 +27,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             let result = posix_spawn(&pid, CommandLine.arguments[0], nil, &attr, nil, environ)
             //let err = errno
             //guard result == 0 {
-            waitpid(pid, nil, 0)
+            //waitpid(pid, nil, 0)
             exit(0)
             
         }
