@@ -23,11 +23,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             posix_spawnattr_set_persona_gid_np(&attr, 0)
 
             var pid: pid_t = 0
-            //let argv = UnsafeMutableRawPointer(CommandLine.unsafeArgv).bindMemory(to: UnsafeMutablePointer<Int8>.self, capacity: Int(CommandLine.argc))
-            let result = posix_spawn(&pid, CommandLine.arguments[0], nil, &attr, nil, environ)
+            var argv: [UnsafeMutablePointer<CChar>?] = [CommandLine.unsafeArgv[0], nil]
+            let result = posix_spawn(&pid, CommandLine.arguments[0], nil, &attr, &argv, environ)
             //let err = errno
             //guard result == 0 {
-            //waitpid(pid, nil, 0)
+            waitpid(pid, nil, 0)
             exit(0)
             
         }
