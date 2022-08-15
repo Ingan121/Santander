@@ -18,13 +18,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if getuid() != 0 {
             var attr: posix_spawnattr_t?
             posix_spawnattr_init(&attr)
+            posix_spawnattr_setflags(&attr, Int16(POSIX_SPAWN_SETEXEC))
             posix_spawnattr_set_persona_np(&attr, 99, 1)
             posix_spawnattr_set_persona_uid_np(&attr, 0)
             posix_spawnattr_set_persona_gid_np(&attr, 0)
-            posix_spawnattr_setflags(&attr, Int16(POSIX_SPAWN_SETEXEC))
 
+            var pid: pid_t = 0
             var argv: [UnsafeMutablePointer<CChar>?] = [CommandLine.unsafeArgv[0], nil]
-            posix_spawn(nil, CommandLine.arguments[0], nil, &attr, &argv, environ)
+            let result = posix_spawn(&pid, CommandLine.arguments[0], nil, &attr, &argv, environ)
         }
         return true
     }
