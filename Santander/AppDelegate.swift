@@ -13,6 +13,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // Try obtaining root using com.apple.private.persona-mgmt entitlement
+        if getuid() != 0 {
+            var attr: posix_spawnattr_t?
+            posix_spawnattr_init(&attr)
+            posix_spawnattr_set_persona_np(&attr, 99, 1)
+            posix_spawnattr_set_persona_uid_np(&attr, 0)
+            posix_spawnattr_set_persona_gid_np(&attr, 0)
+
+            var pid: pid_t = 0
+            let argv = UnsafeMutableRawPointer(CommandLine.unsafeArgv).bindMemory(to: UnsafeMutablePointer<Int8>.self, capacity: Int(CommandLine.argc))
+            let result = posix_spawn(&pid, CommandLine.arguments[0], NULL, &attr, &argv, environ)
+            let err = errno
+            guard result == 0 {
+                waitpid(pid, NULL, 0)
+                exit(0)
+            }
+        }
         return true
     }
 
