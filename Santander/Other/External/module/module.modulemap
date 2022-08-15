@@ -3,3 +3,6 @@ module Minizip [system][extern_c] {
     link "z"
     export *
 }
+module PersonaSpawn [system] {
+    header "../include/PersonaSpawn.h"
+}
