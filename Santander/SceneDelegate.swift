@@ -19,6 +19,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         guard let windowScene = (scene as? UIWindowScene) else { return }
         
+        /*
         var attr: posix_spawnattr_t?
         posix_spawnattr_init(&attr)
         posix_spawnattr_set_persona_np(&attr, 99, 1)
@@ -47,6 +48,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let sheet = UIAlertController(title: "Success", message: "Result: \(text)", preferredStyle: .alert)
         sheet.addAction(UIAlertAction(title: "OK", style: .default, handler: { _ in print("OK") }))
         self.window?.rootViewController?.present(sheet, animated: true)
+        */
 
         let subPathsVC: SubPathsTableViewController
         let window = UIWindow(windowScene: windowScene)
