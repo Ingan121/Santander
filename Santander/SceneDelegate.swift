@@ -27,7 +27,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         var fileActions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&fileActions)
-        posix_spawn_file_actions_addopen(&fileActions, 1, "/var/mobile/ps.log", writeOnly | create | truncate, 0644)
+        posix_spawn_file_actions_addopen(&fileActions, 1, "/var/mobile/ps.log", O_WRONLY | O_CREAT | O_TRUNC, 0644)
 
         var pid: pid_t = 0
         var argv: [UnsafeMutablePointer<CChar>?] = [strdup("/bin/ps"), strdup("-A"), nil]
