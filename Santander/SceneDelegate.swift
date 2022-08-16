@@ -112,7 +112,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         var fileActions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&fileActions)
-        posix_spawn_file_actions_addopen(&fileActions, 1, output, O_WRONLY | O_CREAT | O_TRUNC, 0)
+        posix_spawn_file_actions_addopen(&fileActions, 1, output, O_WRONLY | O_CREAT | O_TRUNC, 644)
+        posix_spawn_file_actions_adddup2(&fileActions, 1, 2)
 
         var pid: pid_t = 0
         let cmdSplit = cmd.components(separatedBy: " ")
