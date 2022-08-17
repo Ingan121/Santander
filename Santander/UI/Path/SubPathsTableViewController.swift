@@ -80,7 +80,7 @@ class SubPathsTableViewController: UITableViewController {
     }
     
     /// Returns the SubPathsTableViewController for favourite paths
-    class func Favorites() -> SubPathsTableViewController {
+    class func favorites() -> SubPathsTableViewController {
         return SubPathsTableViewController(
             contents: UserPreferences.favouritePaths.map { URL(fileURLWithPath: $0) },
             title: "Favorites",
@@ -143,9 +143,7 @@ class SubPathsTableViewController: UITableViewController {
         tableView.dataSource = self.dataSource
         showPaths()
         
-        if self.contents.isEmpty {
-            setupPermissionDeniedLabelIfNeeded()
-        }
+        setupPermissionDeniedLabelIfNeeded()
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -398,17 +396,8 @@ class SubPathsTableViewController: UITableViewController {
     
     
     func goToFile(path: URL) {
-        // if we can get the string contents,
-        // open the Text Editor
-        if let audioVC = try? AudioPlayerViewController(fileURL: path) {
-            let navVC = UINavigationController(rootViewController: audioVC)
-            navVC.modalPresentationStyle = .fullScreen
-            self.present(navVC, animated: true)
-        } else if let editorVC = try? TextFileEditorViewController(fileURL: path) {
-            let vc = UINavigationController(rootViewController: editorVC)
-            vc.modalPresentationStyle = .overFullScreen
-            self.present(vc, animated: true)
-        } else if path.pathExtension == "zip" {
+        // decompress if zip
+        if path.pathExtension == "zip" {
             DispatchQueue.main.async {
                 do {
                     try Compression.shared.unzipFile(path, destination: path.deletingPathExtension(), overwrite: true, password: nil)
@@ -416,6 +405,14 @@ class SubPathsTableViewController: UITableViewController {
                     self.errorAlert(error, title: "Unable to decompress \"\(path.lastPathComponent)\"")
                 }
             }
+        } else if let audioVC = try? AudioPlayerViewController(fileURL: path) {
+            let navVC = UINavigationController(rootViewController: audioVC)
+            navVC.modalPresentationStyle = .fullScreen
+            self.present(navVC, animated: true)
+        } else if let editorVC = try? TextFileEditorViewController(fileURL: path) {
+            let vc = UINavigationController(rootViewController: editorVC)
+            vc.modalPresentationStyle = .overFullScreen
+            self.present(vc, animated: true)
         } else {
             openQuickLookPreview(forURL: path)
         }
@@ -478,15 +475,45 @@ class SubPathsTableViewController: UITableViewController {
     
     /// Opens the information bottom sheet for a specified path
     func openInfoBottomSheet(path: URL) {
-        let navController = UINavigationController(
-            rootViewController: PathInformationTableViewController(style: .insetGrouped, path: path)
-        )
-        
-        if #available(iOS 15.0, *) {
-            navController.sheetPresentationController?.detents = [.medium(), .large()]
+        if let app = path.applicationItem {
+            // if we can get the app info too,
+            // present an action sheet to choose between either
+            let actionSheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+            let pathInfoAction = UIAlertAction(title: "Path Info", style: .default) { _ in
+                let navController = UINavigationController(
+                    rootViewController: PathInformationTableViewController(style: .insetGrouped, path: path)
+                )
+                
+                if #available(iOS 15.0, *) {
+                    navController.sheetPresentationController?.detents = [.medium(), .large()]
+                }
+                
+                self.present(navController, animated: true)
+            }
+            
+            let appInfoAction = UIAlertAction(title: "App Info", style: .default) { _ in
+                let navController = UINavigationController(
+                    rootViewController: AppInfoViewController(style: .insetGrouped, app: app, subPathsSender: self)
+                )
+                
+                self.present(navController, animated: true)
+            }
+            
+            actionSheet.addAction(appInfoAction)
+            actionSheet.addAction(pathInfoAction)
+            actionSheet.addAction(.init(title: "Cancel", style: .cancel))
+            self.present(actionSheet, animated: true)
+        } else {
+            let navController = UINavigationController(
+                rootViewController: PathInformationTableViewController(style: .insetGrouped, path: path)
+            )
+            
+            if #available(iOS 15.0, *) {
+                navController.sheetPresentationController?.detents = [.medium(), .large()]
+            }
+            
+            self.present(navController, animated: true)
         }
-        
-        self.present(navController, animated: true)
     }
     
     override func tableView(_ tableView: UITableView, accessoryButtonTappedForRowWith indexPath: IndexPath) {
@@ -515,6 +542,20 @@ class SubPathsTableViewController: UITableViewController {
         }
         
         var cellConf = cell.defaultContentConfiguration()
+        defer {
+            cell.contentConfiguration = cellConf
+        }
+        
+        // if we're displaying an app, whether it's a .app
+        // or an app in the containers URL
+        // display the properties of the app instead
+        if let app = fsItem.applicationItem {
+            cellConf.text = app.localizedName()
+            cellConf.image = ApplicationsManager.shared.icon(forApplication: app)
+            cellConf.secondaryText = fsItem.lastPathComponent
+            cell.accessoryType = .disclosureIndicator
+            return cell
+        }
         
         cellConf.text = fsItem.lastPathComponent
         
@@ -538,7 +579,6 @@ class SubPathsTableViewController: UITableViewController {
             cell.accessoryType = .disclosureIndicator
         }
         
-        cell.contentConfiguration = cellConf
         return cell
     }
     
@@ -618,28 +658,36 @@ class SubPathsTableViewController: UITableViewController {
             if item.pathExtension != "zip" {
                 compressOrDecompressAction = UIAction(title: "Compress", image: UIImage(systemName: "archivebox")) { _ in
                     let zipFilePath = item.deletingPathExtension().appendingPathExtension("zip")
-                    DispatchQueue.main.async {
-                        do {
-                            try Compression.shared.zipFiles(paths: [item], zipFilePath: zipFilePath, password: nil, progress: nil)
-                        } catch {
-                            self.errorAlert(error, title: "Unable to compress \"\(item.lastPathComponent)\"")
-                        }
+                    do {
+                        try Compression.shared.zipFiles(paths: [item], zipFilePath: zipFilePath, password: nil, progress: nil)
+                    } catch {
+                        self.errorAlert(error, title: "Unable to compress \"\(item.lastPathComponent)\"")
                     }
                 }
             } else {
                 compressOrDecompressAction = UIAction(title: "Decompress", image: UIImage(systemName: "archivebox")) { _ in
                     let destination = item.deletingPathExtension()
-                    DispatchQueue.main.async {
-                        do {
-                            try Compression.shared.unzipFile(item, destination: destination, overwrite: true, password: nil)
-                        } catch {
-                            self.errorAlert(error, title: "Unable to decompress \"\(item.lastPathComponent)\"")
-                        }
+                    do {
+                        try Compression.shared.unzipFile(item, destination: destination, overwrite: true, password: nil)
+                    } catch {
+                        self.errorAlert(error, title: "Unable to decompress \"\(item.lastPathComponent)\"")
                     }
                 }
             }
             
             children.append(compressOrDecompressAction)
+            
+            // "Open App" option for apps
+            if let app = item.applicationItem {
+                let openAction = UIAction(title: "Open App") { _ in
+                    do {
+                        try ApplicationsManager.shared.openApp(app)
+                    } catch {
+                        self.errorAlert(error, title: "Unable to open app")
+                    }
+                }
+                children.append(openAction)
+            }
             
             if UIDevice.current.userInterfaceIdiom == .pad {
                 var menu = UIMenu(title: "Add to group..", image: UIImage(systemName: "sidebar.leading"), children: [])
@@ -696,7 +744,7 @@ class SubPathsTableViewController: UITableViewController {
         // if we're in the "Favorites" sheet, don't display the Favorites button
         if !isFavouritePathsSheet {
             let seeFavoritesAction = UIAction(title: "Favorites", image: UIImage(systemName: "star.fill")) { _ in
-                let newVC = UINavigationController(rootViewController: SubPathsTableViewController.Favorites())
+                let newVC = UINavigationController(rootViewController: SubPathsTableViewController.favorites())
                 self.present(newVC, animated: true)
             }
             

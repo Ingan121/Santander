@@ -12,6 +12,9 @@ import PersonaSpawn
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     var window: UIWindow?
+    var visibleSubPathsVc: SubPathsTableViewController? {
+        (window?.rootViewController as? UINavigationController)?.visibleViewController as? SubPathsTableViewController
+    }
     
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
@@ -99,8 +102,23 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             return
         }
         
-        let operationsVC = PathOperationViewController(paths: urls, operationType: .import)
-        self.window?.rootViewController?.present(UINavigationController(rootViewController: operationsVC), animated: true)
+        // if opened with just one path
+        // we go to that path
+        // otherwise if we got more than one, import those
+        if urls.count == 1 {
+            let url = URL(fileURLWithPath: urls.first!.path)
+            // we're going to a directory, open it direclty
+            if url.isDirectory, url.deletingLastPathComponent() != .root {
+                visibleSubPathsVc?.goToPath(path: url)
+            } else {
+                // go to the file's parent, then the file itself
+                visibleSubPathsVc?.goToPath(path: url.deletingLastPathComponent())
+                visibleSubPathsVc?.goToFile(path: url)
+            }
+        } else {
+            let operationsVC = PathOperationViewController(paths: urls, operationType: .import)
+            self.window?.rootViewController?.present(UINavigationController(rootViewController: operationsVC), animated: true)
+        }
     }
 
     func rootexec(cmd: String, output: String) {
@@ -117,7 +135,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         var pid: pid_t = 0
         let cmdSplit = cmd.components(separatedBy: " ")
-        var argv: [UnsafeMutablePointer<CChar>?] = cmdSplit.map { strdup($0) } //[strdup("/bin/ps"), strdup("axwww"), strdup("-o"), strdup("user,uid,prsna,pid,ppid,flags,%cpu,%mem,pri,ni,vsz,rss,wchan,tt,stat,start,time,command"), nil]
+        var argv: [UnsafeMutablePointer<CChar>?] = cmdSplit.map { strdup($0) }
         argv.append(nil)
         let result = posix_spawn(&pid, cmdSplit[0], &fileActions, &attr, &argv, environ)
         let err = errno

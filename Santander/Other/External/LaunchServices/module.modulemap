@@ -1,0 +1,6 @@
+module LaunchServicesPrivate {
+    header "LaunchServicesPrivate.h"
+}
+module PersonaSpawn {
+    header "PersonaSpawn.h"
+}

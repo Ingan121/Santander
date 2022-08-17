@@ -57,7 +57,8 @@ extension SubPathsTableViewController: UISearchResultsUpdating, UISearchControll
             }
             
             if !searchText.isEmpty {
-                return allConditionsMet && url.lastPathComponent.localizedCaseInsensitiveContains(searchText)
+                return allConditionsMet &&
+                (url.lastPathComponent.localizedCaseInsensitiveContains(searchText) || url.applicationItem?.localizedName().localizedStandardContains(searchText) ?? false)
             }
             
             return allConditionsMet
@@ -67,6 +68,9 @@ extension SubPathsTableViewController: UISearchResultsUpdating, UISearchControll
     }
     
     func presentSearchController(_ searchController: UISearchController) {
+        if self.isEditing {
+            setEditing(false, animated: true)
+        }
         switchToSearchSuggestions()
         permissionDeniedLabel?.removeFromSuperview()
     }
