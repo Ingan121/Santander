@@ -44,7 +44,7 @@ jobs:
           pip3 install -U git+https://github.com/itsnebulalol/permasigner.git
           permasigner -d -p ${{ github.workspace }}/Santander.ipa -o ${{ github.workspace }}/Santander.deb -e ${{ github.workspace }}/entitlements.plist
  
-          sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb ${{ github.workspace }}/debdir
+          sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb/Santander_*.deb ${{ github.workspace }}/debdir
           cd ${{ github.workspace }}/debdir/Applications
           zip -r ${{ github.workspace }}/Santander.zip Santander.app
       - name: Upload IPA
