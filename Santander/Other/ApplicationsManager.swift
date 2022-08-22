@@ -13,15 +13,27 @@ struct ApplicationsManager {
     let allApps: [LSApplicationProxy]
     static let shared = ApplicationsManager(allApps: LSApplicationWorkspace.default().allInstalledApplications())
     
-    func applicationForContainerURL(_ containerURL: URL) -> LSApplicationProxy? {
+    func application(forContainerURL containerURL: URL) -> LSApplicationProxy? {
         return allApps.first { app in
             app.containerURL() == containerURL
         }
     }
     
-    func applicationForBundleURL(_ bundleURL: URL) -> LSApplicationProxy? {
+    func application(forBundleURL bundleURL: URL) -> LSApplicationProxy? {
         return allApps.first { app in
             app.bundleURL() == bundleURL
+        }
+    }
+    
+    func deleteApp(_ app: LSApplicationProxy) throws {
+        let errorPointer: NSErrorPointer = nil
+        let didSucceed = LSApplicationWorkspace.default().uninstallApplication(app.applicationIdentifier(), withOptions: nil, error: errorPointer, usingBlock: nil)
+        if let error = errorPointer?.pointee {
+            throw error
+        }
+        
+        guard didSucceed else {
+            throw Errors.unableToUninstallApplication(appBundleID: app.applicationIdentifier())
         }
     }
     
@@ -37,11 +49,14 @@ struct ApplicationsManager {
     
     enum Errors: Error, LocalizedError {
         case unableToOpenApplication(appBundleID: String)
+        case unableToUninstallApplication(appBundleID: String)
         
         var errorDescription: String? {
             switch self {
             case .unableToOpenApplication(let bundleID):
                 return "Unable to open Application with Bundle ID \(bundleID)"
+            case .unableToUninstallApplication(let bundleID):
+                return "Unable to delete Application with Bundle ID \(bundleID)"
             }
         }
     }

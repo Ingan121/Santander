@@ -16,9 +16,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (getter=isDeletable, readonly, nonatomic) BOOL deletable;
 @property (getter=isBetaApp, readonly, nonatomic) BOOL betaApp;
 @property (getter=isRestricted, readonly, nonatomic) BOOL restricted;
+@property (getter=isContainerized, readonly, nonatomic) BOOL containerized;
 @property (readonly, nonatomic) NSSet <NSString *> *claimedURLSchemes;
 @property (readonly, nonatomic) NSString *teamID;
-@property (getter=isContainerized, readonly, nonatomic) BOOL containerized;
+@property (copy, nonatomic) NSString *sdkVersion;
 @property (readonly, nonatomic) NSDictionary <NSString *, id> *entitlements;
 
 + (LSApplicationProxy*)applicationProxyForIdentifier:(id)identifier;
@@ -33,6 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
 + (instancetype) defaultWorkspace;
 - (NSArray <LSApplicationProxy *>*)allInstalledApplications;
 - (BOOL)openApplicationWithBundleID:(NSString *)arg0 ;
+- (BOOL)uninstallApplication:(NSString *)arg0 withOptions:(_Nullable id)arg1 error:(NSError **)arg2 usingBlock:(_Nullable id)arg3;
 @end
 
 @interface UIImage (Private)
