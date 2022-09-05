@@ -112,7 +112,7 @@ jobs:
 
           mkdir -p ${{ github.workspace }}/out/ipa/Payload
           cp -R ${{ github.workspace }}/xcodebuild/Release-iphoneos/Santander.app ${{ github.workspace }}/out/ipa/Payload
-          cp .theos/obj/santanderhelper ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
+          cp Helper/.theos/obj/santanderhelper ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
 
           ldid -S${{ github.workspace }}/App/entitlements.plist ${{ github.workspace }}/out/ipa/Payload/Santander.app
           ldid -s -K${{ github.workspace }}/cert.p12 -Upassword ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
