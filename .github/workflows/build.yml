@@ -108,12 +108,13 @@ jobs:
           cd Helper
           make clean
           make FINALPACKAGE=1
+          cd ..
 
           mkdir -p ${{ github.workspace }}/out/ipa/Payload
           cp -R ${{ github.workspace }}/xcodebuild/Release-iphoneos/Santander.app ${{ github.workspace }}/out/ipa/Payload
-          ldid -S${{ github.workspace }}/App/entitlements.plist ${{ github.workspace }}/out/ipa/Payload/Santander.app
-
           cp .theos/obj/santanderhelper ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
+
+          ldid -S${{ github.workspace }}/App/entitlements.plist ${{ github.workspace }}/out/ipa/Payload/Santander.app
           ldid -s -K${{ github.workspace }}/cert.p12 -Upassword ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
 
           cd ${{ github.workspace }}/out/ipa
