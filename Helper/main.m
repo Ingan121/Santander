@@ -10,6 +10,9 @@ int main(int argc, char *argv[], char *envp[]) {
 
         NSLog(@"[SantanderHelper] spawned, uid: %d, gid: %d", getuid(), getgid());
 
+        NSBundle* mcmBundle = [NSBundle bundleWithPath:@"/System/Library/PrivateFrameworks/MobileContainerManager.framework"];
+		[mcmBundle load];
+
         int ret = 0;
         NSError* error;
 
