@@ -40,8 +40,8 @@ class SubPathsTableViewController: UITableViewController {
         }
     }
     
-    /// is this ViewController being presented as the `Favourite` paths?
-    let isFavouritePathsSheet: Bool
+    /// is this ViewController being presented as the `Bookmarks` paths?
+    let isBookmarksSheet: Bool
     
     /// The current path from which items are presented
     var currentPath: URL? = nil
@@ -72,39 +72,42 @@ class SubPathsTableViewController: UITableViewController {
         }
     }
     
+    /// Whether or not the current path contains subpaths that are app UUIDs
+    var containsAppUUIDs: Bool?
+
     typealias DataSourceType = UITableViewDiffableDataSource<Int, SubPathsRowItem>
     lazy var dataSource = DataSourceType(tableView: self.tableView) { tableView, indexPath, itemIdentifier in
         switch itemIdentifier {
         case .path(let url):
-            return self.pathCellRow(forURL: url, displayFullPathAsSubtitle: self.isSearching || self.isFavouritePathsSheet)
+            return self.pathCellRow(forURL: url, displayFullPathAsSubtitle: self.isSearching || self.isBookmarksSheet)
         case .searchSuggestion(let suggestion):
             return self.searchSuggestionCellRow(suggestion: suggestion)
         }
     }
     
-    /// Returns the SubPathsTableViewController for favourite paths
-    class func favorites() -> SubPathsTableViewController {
+    /// Returns the SubPathsTableViewController for bookmarks paths
+    class func bookmarks() -> SubPathsTableViewController {
         return SubPathsTableViewController(
-            contents: UserPreferences.favouritePaths.map { URL(fileURLWithPath: $0) },
-            title: "Favorites",
-            isFavouritePathsSheet: true)
+            contents: Array(UserPreferences.bookmarks),
+            title: "Bookmarks",
+            isBookmarksSheet: true)
     }
     
     /// Initialize with a given path URL
-    init(style: UITableView.Style = .userPreferred, path: URL, isFavouritePathsSheet: Bool = false) {
+    init(style: UITableView.Style = .userPreferred, path: URL, isBookmarksSheet: Bool = false) {
         self.unfilteredContents = self.sortMethod.sorting(URLs: path.contents, sortOrder: .userPreferred)
         self.currentPath = path
-        self.isFavouritePathsSheet = isFavouritePathsSheet
-        
+        self.isBookmarksSheet = isBookmarksSheet
+
         super.init(style: style)
         self.title = path.lastPathComponent
     }
     
     /// Initialize with the given specified URLs
-    init(style: UITableView.Style = .userPreferred, contents: [URL], title: String, isFavouritePathsSheet: Bool = false) {
+    init(style: UITableView.Style = .userPreferred, contents: [URL], title: String, isBookmarksSheet: Bool = false) {
         self.unfilteredContents = self.sortMethod.sorting(URLs: contents, sortOrder: .userPreferred)
-        self.isFavouritePathsSheet = isFavouritePathsSheet
-        
+        self.isBookmarksSheet = isBookmarksSheet
+
         super.init(style: style)
         self.title = title
     }
@@ -131,6 +134,7 @@ class SubPathsTableViewController: UITableViewController {
         self.navigationItem.hidesSearchBarWhenScrolling = !UserPreferences.alwaysShowSearchBar
         if let currentPath = currentPath {
             searchController.searchBar.scopeButtonTitles = [currentPath.lastPathComponent, "Subdirectories"]
+            self.containsAppUUIDs = currentPath.containsAppUUIDSubpaths
         }
         self.navigationItem.searchController = searchController
 #if compiler(>=5.7)
@@ -270,17 +274,15 @@ class SubPathsTableViewController: UITableViewController {
         }
         
         let selectedItem = self.contents[indexPath.row]
-        let itemAlreadyFavourited = UserPreferences.favouritePaths.contains(selectedItem.path)
+        let itemAlreadyBookmarked = UserPreferences.bookmarks.contains(selectedItem)
         let favouriteAction = UIContextualAction(style: .normal, title: nil) { _, _, handler in
             // if the item already exists, remove it
-            if itemAlreadyFavourited {
-                UserPreferences.favouritePaths.removeAll { $0 == selectedItem.path }
-                
-                // if we're in the Favorites sheet, reload the table
-                if self.isFavouritePathsSheet {
-                    self.unfilteredContents = UserPreferences.favouritePaths.map {
-                        URL(fileURLWithPath: $0)
-                    }
+            if itemAlreadyBookmarked {
+                UserPreferences.bookmarks.remove(selectedItem)
+
+                // if we're in the bookmarks sheet, reload the table
+                if self.isBookmarksSheet {
+                    self.unfilteredContents = Array(UserPreferences.bookmarks)
                     
                     var snapshot = self.dataSource.snapshot()
                     snapshot.deleteItems([.path(selectedItem)])
@@ -288,14 +290,14 @@ class SubPathsTableViewController: UITableViewController {
                 }
             } else {
                 // otherwise, append it
-                UserPreferences.favouritePaths.append(selectedItem.path)
+                UserPreferences.bookmarks.insert(selectedItem)
             }
             
             handler(true)
         }
         
         favouriteAction.backgroundColor = .systemBlue
-        favouriteAction.image = itemAlreadyFavourited ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
+        favouriteAction.image = itemAlreadyBookmarked ? UIImage(systemName: "star.fill") : UIImage(systemName: "star")
         
         let deleteAction = UIContextualAction(style: .destructive, title: nil) { _, _, completion in
             self.deleteURL(selectedItem) { didSucceed in
@@ -449,11 +451,11 @@ class SubPathsTableViewController: UITableViewController {
         if path.isDirectory {
             let parentDirectory = path.deletingLastPathComponent()
             
-            // if the parent directory is the current directory or we're in the favourites sheet
+            // if the parent directory is the current directory or we're in the bookmarks sheet
             // simply push through the navigation controller
             // rather than traversing through each parent path
-            if isFavouritePathsSheet || parentDirectory == self.currentPath {
-                let vc = SubPathsTableViewController(path: path, isFavouritePathsSheet: self.isFavouritePathsSheet)
+            if isBookmarksSheet || parentDirectory == self.currentPath {
+                let vc = SubPathsTableViewController(path: path, isBookmarksSheet: self.isBookmarksSheet)
                 if pushingToSplitView {
                     self.splitViewController?.setViewController(vc, for: .secondary)
                 } else {
@@ -469,7 +471,7 @@ class SubPathsTableViewController: UITableViewController {
     
     func traverseThroughPath(_ path: URL, pushingToSplitView: Bool) {
         let vcs = path.fullPathComponents().map {
-            SubPathsTableViewController(path: $0, isFavouritePathsSheet: self.isFavouritePathsSheet)
+            SubPathsTableViewController(path: $0, isBookmarksSheet: self.isBookmarksSheet)
         }
         
         if pushingToSplitView {
@@ -563,14 +565,17 @@ class SubPathsTableViewController: UITableViewController {
             cell.contentConfiguration = cellConf
         }
         
-        // if we're displaying an app, whether it's a .app
-        // or an app in the containers URL
-        // display the properties of the app instead
-        if let app = fsItem.applicationItem {
+        // for performance, we check first for if the current path contains app UUIDs (if the pathExt isn't .app)
+        // otherwise, if currentPath is nil, check for if the parent dir of the path contains app UUIDs
+        // performance is worse if we *always* do the first,
+        // but `containsAppUUIDs` isn't nil as long as `currentPath` isn't nil.
+        if fsItem.pathExtension == "app" || (containsAppUUIDs ?? fsItem.deletingLastPathComponent().containsAppUUIDSubpaths),
+           let app = fsItem.applicationItem {
             cellConf.text = app.localizedName()
             cellConf.image = ApplicationsManager.shared.icon(forApplication: app)
             cellConf.secondaryText = fsItem.lastPathComponent
             cell.accessoryType = .disclosureIndicator
+            cellConf.textProperties.color = tableView.tintColor ?? .systemBlue
             return cell
         }
         
@@ -778,14 +783,14 @@ class SubPathsTableViewController: UITableViewController {
         let firstMenu = UIMenu(options: .displayInline, children: firstMenuItems)
         var menuActions: [UIMenuElement] = [firstMenu]
         
-        // if we're in the "Favorites" sheet, don't display the Favorites button
-        if !isFavouritePathsSheet {
-            let seeFavoritesAction = UIAction(title: "Favorites", image: UIImage(systemName: "star.fill")) { _ in
-                let newVC = UINavigationController(rootViewController: SubPathsTableViewController.favorites())
+        // if we're in the "Bookmarks" sheet, don't display the Bookmarks button
+        if !isBookmarksSheet {
+            let presentBookmarks = UIAction(title: "Bookmarks", image: UIImage(systemName: "bookmark")) { _ in
+                let newVC = UINavigationController(rootViewController: SubPathsTableViewController.bookmarks())
                 self.present(newVC, animated: true)
             }
-            
-            menuActions.append(seeFavoritesAction)
+
+            menuActions.append(presentBookmarks)
         }
         
         if let currentPath = currentPath {

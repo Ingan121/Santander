@@ -75,13 +75,8 @@ extension URL {
         return try? FileManager.default.destinationOfSymbolicLink(atPath: self.path)
     }
     
-    static var root: URL {
-        return URL(fileURLWithPath: "/")
-    }
-    
-    static var home: URL {
-        return URL(fileURLWithPath: NSHomeDirectory())
-    }
+    static var root: URL = URL(fileURLWithPath: "/")
+    static var home: URL = URL(fileURLWithPath: NSHomeDirectory())
     
     var isSymlink: Bool {
         return (try? FileManager.default.destinationOfSymbolicLink(atPath: self.path)) != nil
@@ -102,19 +97,11 @@ extension URL {
                 return UIImage(systemName: "doc")
             }
             
-            if type.isOfType(.text) {
-                return UIImage(systemName: "doc.text")
-            } else if type.isOfType(.image) {
-                return UIImage(systemName: "photo")
-            } else if type.isOfType(.audio) {
-                return UIImage(systemName: "waveform")
-            } else if type.isOfType(.movie) || type.isOfType(.video) {
-                return UIImage(systemName: "play")
-            } else if type.isOfType(.executable) {
-                return UIImage(systemName: "terminal")
-            }
+            let imageName = UTType.iconsDictionary.first { (key, _) in
+                type.isOfType(key)
+            }?.value
             
-            return UIImage(systemName: "doc")
+            return UIImage(systemName: imageName ?? "doc")
         }
     }
     
@@ -139,25 +126,16 @@ extension URL {
         return arr
     }
     
-    var isApplicationsContainerURL: Bool {
-        #if targetEnvironment(simulator)
-        // on the simulator, the home URL is the app's container,
-        // so deleting the app id from the URL gives us the URL for app containers
-        return self == URL.home.deletingLastPathComponent()
-        #else
-        return self == URL(fileURLWithPath: "/private/var/containers/Bundle/Application") ||
-        self == URL(fileURLWithPath: "/private/var/mobile/Containers/Data")
-        #endif
+    var containsAppUUIDSubpaths: Bool {
+        applicationPaths.contains(self.path)
     }
     
     var applicationItem: LSApplicationProxy? {
         if self.pathExtension == "app" {
             return ApplicationsManager.shared.application(forBundleURL: self)
-        } else if applicationPaths.contains(deletingLastPathComponent().path) {
-            return ApplicationsManager.shared.application(forContainerURL: self) ?? ApplicationsManager.shared.application(forDataContainerURL: self)
         }
         
-        return nil
+        return ApplicationsManager.shared.application(forContainerURL: self) ?? ApplicationsManager.shared.application(forDataContainerURL: self)
     }
 }
 
@@ -167,8 +145,7 @@ fileprivate let applicationPaths: [String] = [URL.home.deletingLastPathComponent
 fileprivate let applicationPaths: [String] = [
     "/private/var/containers/Bundle/Application",
     "/private/var/mobile/Containers/Data",
-    "/private/var/mobile/Containers/Data/Application",
-    "/private/var/mobile/Containers/Shared/AppGroup"
+    "/private/var/mobile/Containers/Data/Application"
 ]
 #endif
 
@@ -424,6 +401,16 @@ extension UTType {
         ]
     }
     
+    /// A Dictionary containing the systemName for icons for of certain UTTypes
+    static let iconsDictionary: [UTType: String] = [
+        .text: "doc.text",
+        .image: "photo",
+        .audio: "waveform",
+        .video: "play",
+        .movie: "play",
+        .executable: "terminal"
+    ]
+
     /// Checks whether the type is equal to the type given in the parameters
     /// or a parameter of said type
     func isOfType(_ type: UTType) -> Bool {

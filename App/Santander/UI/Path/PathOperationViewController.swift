@@ -22,7 +22,7 @@ class PathOperationViewController: SubPathsTableViewController {
         self.paths = paths
         self.operationType = operationType
         
-        super.init(path: startingPath) // Start from root
+        super.init(path: startingPath)
     }
     
     required init?(coder: NSCoder) {
@@ -110,7 +110,8 @@ class PathOperationViewController: SubPathsTableViewController {
         super.viewDidDisappear(animated)
         
         for path in paths {
-            path.stopAccessingSecurityScopedResource() // if we don't do this, we may result in a memory leak
+            // if we don't do this, we may result in a memory leak
+            path.stopAccessingSecurityScopedResource()
         }
     }
 }
