@@ -74,7 +74,7 @@ class SubPathsTableViewController: UITableViewController {
     
     /// Whether or not the current path contains subpaths that are app UUIDs
     var containsAppUUIDs: Bool?
-
+    
     typealias DataSourceType = UITableViewDiffableDataSource<Int, SubPathsRowItem>
     lazy var dataSource = DataSourceType(tableView: self.tableView) { tableView, indexPath, itemIdentifier in
         switch itemIdentifier {
@@ -98,7 +98,7 @@ class SubPathsTableViewController: UITableViewController {
         self.unfilteredContents = self.sortMethod.sorting(URLs: path.contents, sortOrder: .userPreferred)
         self.currentPath = path
         self.isBookmarksSheet = isBookmarksSheet
-
+        
         super.init(style: style)
         self.title = path.lastPathComponent
     }
@@ -107,7 +107,7 @@ class SubPathsTableViewController: UITableViewController {
     init(style: UITableView.Style = .userPreferred, contents: [URL], title: String, isBookmarksSheet: Bool = false) {
         self.unfilteredContents = self.sortMethod.sorting(URLs: contents, sortOrder: .userPreferred)
         self.isBookmarksSheet = isBookmarksSheet
-
+        
         super.init(style: style)
         self.title = title
     }
@@ -276,23 +276,7 @@ class SubPathsTableViewController: UITableViewController {
         let selectedItem = self.contents[indexPath.row]
         let itemAlreadyBookmarked = UserPreferences.bookmarks.contains(selectedItem)
         let favouriteAction = UIContextualAction(style: .normal, title: nil) { _, _, handler in
-            // if the item already exists, remove it
-            if itemAlreadyBookmarked {
-                UserPreferences.bookmarks.remove(selectedItem)
-
-                // if we're in the bookmarks sheet, reload the table
-                if self.isBookmarksSheet {
-                    self.unfilteredContents = Array(UserPreferences.bookmarks)
-                    
-                    var snapshot = self.dataSource.snapshot()
-                    snapshot.deleteItems([.path(selectedItem)])
-                    self.dataSource.apply(snapshot)
-                }
-            } else {
-                // otherwise, append it
-                UserPreferences.bookmarks.insert(selectedItem)
-            }
-            
+            self.removeOrAddItemToBookmarks(selectedItem, alreadyBookmarked: itemAlreadyBookmarked)
             handler(true)
         }
         
@@ -309,6 +293,24 @@ class SubPathsTableViewController: UITableViewController {
         
         let config = UISwipeActionsConfiguration(actions: [deleteAction, favouriteAction])
         return config
+    }
+    
+    func removeOrAddItemToBookmarks(_ item: URL, alreadyBookmarked: Bool) {
+        if alreadyBookmarked {
+            UserPreferences.bookmarks.remove(item)
+            
+            // if we're in the bookmarks sheet, reload the table
+            if self.isBookmarksSheet {
+                self.unfilteredContents = Array(UserPreferences.bookmarks)
+                
+                var snapshot = self.dataSource.snapshot()
+                snapshot.deleteItems([.path(item)])
+                self.dataSource.apply(snapshot)
+            }
+        } else {
+            // otherwise, append it
+            UserPreferences.bookmarks.insert(item)
+        }
     }
     
     func makeSortMenu() -> UIMenu {
@@ -749,8 +751,16 @@ class SubPathsTableViewController: UITableViewController {
                 self.deleteURL(item) { _ in }
             }
             
+            let isItemBookmarked = UserPreferences.bookmarks.contains(item)
+            let bookmarkAction = UIAction(
+                title: isItemBookmarked ? "Remove bookmark" : "Bookmark",
+                image: UIImage(systemName: isItemBookmarked ? "bookmark.slash" : "bookmark")
+            ) { _ in
+                self.removeOrAddItemToBookmarks(item, alreadyBookmarked: isItemBookmarked)
+            }
+            
             children.append(contentsOf: [operationItemsMenu, pasteboardOptions])
-            children.append(UIMenu(options: .displayInline, children: [deleteAction]))
+            children.append(UIMenu(options: .displayInline, children: [bookmarkAction, deleteAction]))
             return UIMenu(children: children)
         }
     }
@@ -789,7 +799,7 @@ class SubPathsTableViewController: UITableViewController {
                 let newVC = UINavigationController(rootViewController: SubPathsTableViewController.bookmarks())
                 self.present(newVC, animated: true)
             }
-
+            
             menuActions.append(presentBookmarks)
         }
         

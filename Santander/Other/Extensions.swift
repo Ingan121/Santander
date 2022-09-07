@@ -410,7 +410,7 @@ extension UTType {
         .movie: "play",
         .executable: "terminal"
     ]
-
+    
     /// Checks whether the type is equal to the type given in the parameters
     /// or a parameter of said type
     func isOfType(_ type: UTType) -> Bool {

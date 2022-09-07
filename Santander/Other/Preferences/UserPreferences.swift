@@ -17,7 +17,7 @@ enum UserPreferences {
     /// see URL.bookmarkData
     @Storage(key: "BookmarksData", defaultValue: [])
     static private var _bookmarksData: [Data]
-
+    
     /// Bookmarked paths by saved the user
     static var bookmarks: Set<URL> {
         get {
@@ -25,19 +25,19 @@ enum UserPreferences {
             let arr = dataArr.compactMap { data in
                 var isStale: Bool = false
                 let url = try? URL(resolvingBookmarkData: data, bookmarkDataIsStale: &isStale)
-
+                
                 // replace if stale
                 if isStale, let indx = dataArr.firstIndex(of: data), let urlData = try? url?.bookmarkData() {
                     dataArr[indx] = urlData
                     self._bookmarksData = dataArr
                 }
-
+                
                 return url
             }
-
+            
             return Set(arr)
         }
-
+        
         set {
             _bookmarksData = newValue.compactMap { url in
                 try? url.bookmarkData()
