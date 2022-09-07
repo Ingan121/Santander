@@ -101,9 +101,7 @@ jobs:
       
       - name: Build IPA
         run: |
-          cd App
           xcodebuild build -scheme Santander -configuration "Release" CODE_SIGNING_ALLOWED="NO" CODE_SIGNING_REQUIRED="NO" CODE_SIGN_IDENTITY="" BUILD_DIR=${{ github.workspace }}/xcodebuild
-          cd ..
 
           cd Helper
           make clean
@@ -114,7 +112,7 @@ jobs:
           cp -R ${{ github.workspace }}/xcodebuild/Release-iphoneos/Santander.app ${{ github.workspace }}/out/ipa/Payload
           cp Helper/.theos/obj/santanderhelper ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
 
-          ldid -S${{ github.workspace }}/App/entitlements.plist ${{ github.workspace }}/out/ipa/Payload/Santander.app
+          ldid -S${{ github.workspace }}/ntitlements.plist ${{ github.workspace }}/out/ipa/Payload/Santander.app
           ldid -s -K${{ github.workspace }}/cert.p12 -Upassword ${{ github.workspace }}/out/ipa/Payload/Santander.app/santanderhelper
 
           cd ${{ github.workspace }}/out/ipa
