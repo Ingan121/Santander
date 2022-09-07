@@ -25,9 +25,9 @@ extension SubPathsTableViewController: UITableViewDropDelegate, UITableViewDragD
                 guard let currentPath = self.currentPath else {
                     return
                 }
-
+                
                 let newPath = currentPath.appendingPathComponent(url.lastPathComponent)
-
+                
                 do {
                     try FileManager.default.copyItem(at: url, to: newPath)
                 } catch {
