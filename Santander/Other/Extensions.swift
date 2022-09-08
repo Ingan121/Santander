@@ -617,7 +617,7 @@ extension UITableViewCell {
     }
 }
 
-extension Dictionary<String, SerializedItemType> {
+extension Dictionary where Key == String, Value == SerializedItemType {
     func asAnyDictionary() -> [String: Any] {
         var dict: [String: Any] = [:]
         for (key, value) in self {
@@ -628,7 +628,7 @@ extension Dictionary<String, SerializedItemType> {
     }
 }
 
-extension Dictionary<String, Any> {
+extension Dictionary where Key == String, Value == Any {
     func asSerializedDictionary() -> SerializedDictionaryType {
         var dict: SerializedDictionaryType = [:]
         for (key, value) in self {
