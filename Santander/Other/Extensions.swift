@@ -111,7 +111,7 @@ extension URL {
     
     func setPermissions(forOwner owner: Permission, group: Permission = [], others: Permission = []) throws {
         let octal = Permission.octalRepresentation(of: [owner, group, others])
-        try FileManager.default.setAttributes([.posixPermissions: octal], ofItemAtPath: path)
+        try FSOperation.perform(.setPermissions(newOctalPermissions: octal), url: self)
     }
     
     /// Returns an array of complete URLs to the URL's path components
@@ -499,7 +499,7 @@ extension UITableViewController {
         let confirmationController = UIAlertController(title: "Are you sure you want to delete \"\(url.lastPathComponent)\"?", message: nil, preferredStyle: .alert)
         let deleteAction = UIAlertAction(title: "Delete", style: .destructive) { _ in
             do {
-                try FileManager.default.removeItem(at: url)
+                try FSOperation.perform(.removeItem, url: url)
                 completionHandler(true)
             } catch {
                 let statusCode = RootHelper.delete(url.absoluteString)
