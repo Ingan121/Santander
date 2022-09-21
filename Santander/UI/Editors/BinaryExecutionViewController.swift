@@ -9,6 +9,7 @@
 import UIKit
 import NSTaskiOS
 
+
 class BinaryExecutionViewController: UIViewController {
     let executableURL: URL
     var task: NSTask = NSTask()
@@ -96,6 +97,9 @@ class BinaryExecutionViewController: UIViewController {
     }
     
     func spawnExecutable(pathAndArgs: String) {
+        if pathAndArgs.starts(with: "sudo ") {
+            rootexec(cmd: pathAndArgs.substring(from: 5))
+        }
         var components = pathAndArgs.components(separatedBy: " ")
         guard let executable = components.first, !executable.isEmpty else {
             self.errorAlert("Enter a valid executable and arguments.", title: "Input is empty")
@@ -128,6 +132,44 @@ class BinaryExecutionViewController: UIViewController {
             task.waitUntilExit()
         } catch {
             self.errorAlert(error, title: "Unable to launch process")
+        }
+    }
+
+    func rootexec(cmd: String) {
+        var attr: posix_spawnattr_t?
+        posix_spawnattr_init(&attr)
+        posix_spawnattr_set_persona_np(&attr, 99, 1)
+        posix_spawnattr_set_persona_uid_np(&attr, 0)
+        posix_spawnattr_set_persona_gid_np(&attr, 0)
+
+        let pipe = Pipe()
+        pipe.fileHandleForReading.readabilityHandler = { outPipe in
+            guard let output = String(data: outPipe.availableData, encoding: .utf8),
+            !output.isEmpty else {
+                return
+            }
+            
+            DispatchQueue.main.async {
+                self.textView.text.append(output)
+            }
+        }
+
+        var fileActions: posix_spawn_file_actions_t?
+        posix_spawn_file_actions_init(&fileActions)
+        posix_spawn_file_actions_adddup2(&fileActions, pipe, 1)
+        posix_spawn_file_actions_adddup2(&fileActions, pipe, 2)
+
+        var pid: pid_t = 0
+        let cmdSplit = cmd.components(separatedBy: " ")
+        var argv: [UnsafeMutablePointer<CChar>?] = cmdSplit.map { strdup($0) }
+        argv.append(nil)
+        
+        textView.text = ""
+        let result = posix_spawn(&pid, cmdSplit[0], &fileActions, &attr, &argv, environ)
+        let err = errno
+        if result != 0 {
+            print("Failed")
+            print("Error: \(result) Errno: \(err)")
         }
     }
 }
