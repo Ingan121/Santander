@@ -8,7 +8,7 @@
 
 import UIKit
 import NSTaskiOS
-
+import PersonaSpawn
 
 class BinaryExecutionViewController: UIViewController {
     let executableURL: URL
@@ -142,7 +142,7 @@ class BinaryExecutionViewController: UIViewController {
         posix_spawnattr_set_persona_uid_np(&attr, 0)
         posix_spawnattr_set_persona_gid_np(&attr, 0)
 
-        let pipe = Pipe()
+        var pipe = Pipe()
         pipe.fileHandleForReading.readabilityHandler = { outPipe in
             guard let output = String(data: outPipe.availableData, encoding: .utf8),
             !output.isEmpty else {
