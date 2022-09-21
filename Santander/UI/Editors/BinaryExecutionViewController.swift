@@ -156,8 +156,8 @@ class BinaryExecutionViewController: UIViewController {
 
         var fileActions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&fileActions)
-        posix_spawn_file_actions_adddup2(&fileActions, pipe, 1)
-        posix_spawn_file_actions_adddup2(&fileActions, pipe, 2)
+        posix_spawn_file_actions_adddup2(&fileActions, &pipe, 1)
+        posix_spawn_file_actions_adddup2(&fileActions, &pipe, 2)
 
         var pid: pid_t = 0
         let cmdSplit = cmd.components(separatedBy: " ")
