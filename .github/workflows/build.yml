@@ -34,6 +34,7 @@ jobs:
           cd ${{ github.workspace }}/ipadir
           zip -r ${{ github.workspace }}/Santander.ipa .
 
+          brew install dpkg
           pip3 install -U git+https://github.com/itsnebulalol/permasigner.git
           permasigner -d -p ${{ github.workspace }}/Santander.ipa -o ${{ github.workspace }}/Santander.deb -e ${{ github.workspace }}/entitlements.plist
  
