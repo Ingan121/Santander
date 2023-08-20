@@ -23,13 +23,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Set up Procursus
-        uses: beerpiss/procursus-action@v2
-        with:
-          packages: ldid
-          cache: true
-          cache-path: ~/__cache
-          mirror: 'https://repo.quiprr.dev/procursus/'
       - name: Select Xcode version (14.0)
         run: |
           sudo xcode-select --switch /Applications/Xcode_14.0.app
