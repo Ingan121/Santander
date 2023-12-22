@@ -33,26 +33,11 @@ jobs:
           cp -R ${{ github.workspace }}/xcodebuild/Release-iphoneos/Santander.app ${{ github.workspace }}/ipadir/Payload
           cd ${{ github.workspace }}/ipadir
           
-          brew install dpkg
           brew install ldid
           ldid -S../entitlements.plist Payload/Santander.app/Santander
-
           zip -r ${{ github.workspace }}/Santander.ipa .
-          sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb/Santander_*.deb ${{ github.workspace }}/debdir
-          cd ${{ github.workspace }}/debdir/Applications
-          zip -r ${{ github.workspace }}/Santander.zip Santander.app
       - name: Upload IPA
         uses: actions/upload-artifact@v3.1.0
         with:
           name: Santander
           path: ${{ github.workspace }}/Santander.ipa
-      - name: Upload Permasign deb
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: SantanderJailbroken
-          path: ${{ github.workspace }}/Santander.deb
-      - name: Upload zip
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: Santander.zip
-          path: ${{ github.workspace }}/Santander.zip
