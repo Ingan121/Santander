@@ -32,12 +32,12 @@ jobs:
           mkdir -p ${{ github.workspace }}/ipadir/Payload
           cp -R ${{ github.workspace }}/xcodebuild/Release-iphoneos/Santander.app ${{ github.workspace }}/ipadir/Payload
           cd ${{ github.workspace }}/ipadir
-          zip -r ${{ github.workspace }}/Santander.ipa .
-
+          
           brew install dpkg
-          pip3 install -U git+https://github.com/itsnebulalol/permasigner.git
-          permasigner -d -p ${{ github.workspace }}/Santander.ipa -o ${{ github.workspace }}/Santander.deb -e ${{ github.workspace }}/entitlements.plist
- 
+          brew install ldid
+          ldid -S../entitlements.plist Payload/Santander.app/Santander
+
+          zip -r ${{ github.workspace }}/Santander.ipa .
           sudo dpkg-deb -x /Users/runner/work/Santander/Santander/Santander.deb/Santander_*.deb ${{ github.workspace }}/debdir
           cd ${{ github.workspace }}/debdir/Applications
           zip -r ${{ github.workspace }}/Santander.zip Santander.app
